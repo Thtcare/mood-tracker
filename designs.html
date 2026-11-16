@@ -1,0 +1,147 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mood tracker — three design directions</title>
+<style>
+  :root { color-scheme: light; --ink:#20221f; --muted:#777a72; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#ecece8; color:var(--ink); font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .intro { max-width:1500px; padding:34px 34px 22px; margin:auto; display:flex; align-items:end; justify-content:space-between; gap:24px; }
+  .eyebrow { margin:0 0 8px; color:#686b64; font-size:11px; font-weight:750; letter-spacing:.16em; text-transform:uppercase; }
+  h1 { margin:0; font:500 clamp(27px,3vw,42px)/1.08 Georgia,serif; letter-spacing:-.035em; }
+  .intro p:last-child { color:#666960; font-size:13px; margin:8px 0 0; }
+  .legend { font-size:11px; color:#686b64; padding-bottom:4px; white-space:nowrap; }
+  .boards { max-width:1500px; margin:0 auto; padding:0 34px 38px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; align-items:start; }
+  .concept { min-width:0; }
+  .concept-head { height:49px; display:flex; justify-content:space-between; align-items:center; padding:0 2px; }
+  .concept-head h2 { margin:0; font-size:12px; letter-spacing:.12em; text-transform:uppercase; }
+  .concept-head span { color:#787b73; font-size:11px; }
+  .screen { min-height:690px; overflow:hidden; position:relative; border-radius:18px; box-shadow:0 12px 35px #24251c12; }
+  .small-label { font-size:10px; letter-spacing:.12em; text-transform:uppercase; font-weight:750; }
+  button { font:inherit; cursor:default; }
+  /* 01 — quiet journal */
+  .journal { background:#fbf8f0; padding:30px 28px; font-family:Georgia,"Times New Roman",serif; }
+  .journal .topline { display:flex; justify-content:space-between; color:#757468; font:11px ui-sans-serif,system-ui; letter-spacing:.1em; text-transform:uppercase; }
+  .journal h3 { font-size:29px; font-weight:400; letter-spacing:-.04em; margin:35px 0 7px; }
+  .journal .sub { color:#817f72; font:13px ui-sans-serif,system-ui; margin:0 0 23px; }
+  .journal .moods { display:flex; gap:8px; margin-bottom:18px; }
+  .journal .mood { border:1px solid #ded9ca; border-radius:999px; padding:10px 11px; color:#69685f; background:transparent; font:11px ui-sans-serif,system-ui; }
+  .journal .mood.selected { background:#314b3b; border-color:#314b3b; color:#fffdf7; }
+  .journal textarea { resize:none; width:100%; height:78px; border:1px solid #e2ddce; background:#fffdf8; padding:13px; border-radius:8px; color:#54564d; font:13px/1.5 Georgia,serif; }
+  .journal .save { margin-top:11px; border:0; border-radius:5px; background:#314b3b; color:white; padding:12px 17px; font:12px ui-sans-serif,system-ui; }
+  .rule { height:1px; background:#e4dfd1; margin:26px 0 19px; }
+  .history-title { display:flex; align-items:center; justify-content:space-between; color:#737164; font:10px ui-sans-serif,system-ui; letter-spacing:.13em; text-transform:uppercase; }
+  .history-title b { color:#7c7a70; font-weight:500; letter-spacing:0; text-transform:none; }
+  .journal-entry { padding:15px 0 13px; border-bottom:1px solid #e9e4d8; display:grid; grid-template-columns:58px 1fr; gap:10px; }
+  .journal-entry time { color:#929083; font:10px/1.6 ui-sans-serif,system-ui; }
+  .journal-entry strong { display:block; font-weight:400; font-size:16px; }
+  .journal-entry p { margin:4px 0 0; color:#777569; font:12px/1.45 ui-sans-serif,system-ui; }
+  /* 02 — crisp utility */
+  .utility { background:#f5f6f8; padding:24px 22px; font-family:ui-sans-serif,system-ui; }
+  .utility .nav { display:flex; align-items:center; justify-content:space-between; padding-bottom:18px; border-bottom:1px solid #e2e5e9; color:#737b87; font-size:11px; }
+  .utility .brand { font-size:12px; font-weight:750; color:#263246; letter-spacing:-.02em; }
+  .utility .avatar { width:26px;height:26px;border-radius:50%;background:#e0e6f3;display:grid;place-items:center;color:#51658b;font-size:10px;font-weight:700; }
+  .utility h3 { margin:25px 0 4px; font-size:22px; color:#263246; letter-spacing:-.04em; }
+  .utility .date { color:#8a929e; font-size:11px; margin-bottom:18px; }
+  .utility .picker { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+  .utility .pick { background:white; border:1px solid #e1e5ec; border-radius:9px; min-height:65px; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; color:#667080; font-size:9px; }
+  .utility .pick i { font-style:normal; font-size:18px; }
+  .utility .pick.selected { border:1.5px solid #5975ca; box-shadow:0 0 0 3px #5975ca13; color:#3e59ac; background:#f8f9ff; }
+  .utility .note-label { display:flex; justify-content:space-between; margin:17px 0 7px; font-size:10px; font-weight:700; color:#667080; }
+  .utility textarea { resize:none; width:100%; height:52px; padding:10px; border:1px solid #e0e4ea; border-radius:7px; background:white; font:11px ui-sans-serif,system-ui; color:#647080; }
+  .utility .save { width:100%; border:0; border-radius:7px; padding:11px; background:#526ec2; color:white; font-size:11px; font-weight:700; margin-top:9px; }
+  .utility .section-head { display:flex; justify-content:space-between; align-items:center; margin:23px 0 9px; color:#2f3949; font-size:12px; font-weight:750; }
+  .utility .section-head span { color:#818b9a; font-size:10px; font-weight:500; }
+  .util-entry { display:grid; grid-template-columns:31px 1fr auto; gap:9px; align-items:center; background:white; padding:11px 10px; border:1px solid #e7e9ed; border-radius:8px; margin-bottom:7px; }
+  .util-icon { width:30px;height:30px;border-radius:8px;background:#fff2d9;display:grid;place-items:center;font-size:15px; }
+  .util-icon.blue { background:#e9efff; }.util-icon.mint { background:#e5f5ed; }
+  .util-entry strong { display:block; color:#374253; font-size:11px; }
+  .util-entry p { margin:3px 0 0; color:#828a96; font-size:10px; }
+  .util-entry time { color:#959ca6; font-size:9px; align-self:start; }
+  .dots { color:#9ca3ad; letter-spacing:2px; font-size:10px; }
+  /* 03 — expressive cards */
+  .playful { background:#f3eaff; padding:26px 22px; font-family:ui-sans-serif,system-ui; background-image:radial-gradient(ellipse at 10% 0%,#fff7d9 0,transparent 42%),radial-gradient(ellipse at 100% 40%,#e8ddff 0,transparent 50%); }
+  .playful .hello { display:flex; justify-content:space-between; align-items:center; color:#65527d; font-size:11px; }
+  .playful .logo { display:flex; gap:8px; align-items:center; color:#392b4f; font-size:12px; font-weight:800; }
+  .spark { width:25px;height:25px;border-radius:9px;background:#ffc76e;display:grid;place-items:center;color:#543a55; }
+  .playful h3 { margin:31px 0 5px; color:#352747; font:600 26px/1.1 ui-sans-serif,system-ui; letter-spacing:-.05em; }
+  .playful .prompt { color:#806b95; font-size:12px; margin:0 0 17px; }
+  .playful .mood-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .playful .tile { min-height:68px; padding:9px 8px; border:1px solid #ffffffb8; border-radius:13px; background:#ffffffa3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:#58466c; font-size:10px; box-shadow:0 3px 10px #53336d09; }
+  .playful .tile i { font-style:normal;font-size:21px;line-height:1; }
+  .playful .tile.active { background:#fff; border:2px solid #9a6ddb; box-shadow:0 5px 16px #69439e24; color:#613c93; }
+  .playful .tile:last-child { grid-column:span 1; }
+  .playful .note-card { margin-top:13px; background:#fffdf9d9; border-radius:13px; padding:12px; }
+  .playful .note-card label { display:block; margin-bottom:7px; color:#775f8f; font-weight:750; font-size:10px; }
+  .playful textarea { width:100%;height:40px;resize:none;border:0;outline:0;background:transparent;color:#786c81;font:11px ui-sans-serif,system-ui; }
+  .playful .save { width:100%; border:0; border-radius:10px; padding:12px; margin-top:10px; color:#fff; background:#6945a4; font-weight:750; font-size:11px; box-shadow:0 5px 12px #6945a433; }
+  .playful .history { margin-top:20px; }
+  .playful .history-head { display:flex;align-items:center;justify-content:space-between;color:#47355e;font-weight:750;font-size:12px;margin-bottom:8px; }
+  .playful .history-head span { color:#886ca5;font-size:10px;font-weight:600; }
+  .play-entry { display:flex; align-items:center; gap:9px; background:#ffffffa8; border:1px solid #fff; border-radius:11px; padding:10px; margin-bottom:7px; }
+  .bubble { width:31px;height:31px;border-radius:11px;display:grid;place-items:center;background:#fff0cd;font-size:16px; }
+  .bubble.pink { background:#ffe3ea; }.bubble.green { background:#ddf4e8; }
+  .play-entry strong { display:block; color:#49385e; font-size:10px; }
+  .play-entry p { margin:3px 0 0; color:#8a799d; font-size:9px; }
+  .play-entry time { margin-left:auto; color:#9b8eaa; font-size:9px; align-self:flex-start; }
+  @media (max-width:1000px) { .boards { grid-template-columns:1fr; max-width:610px; } .screen{min-height:auto;} .intro{max-width:610px;align-items:start;flex-direction:column;} .legend{white-space:normal;} }
+</style>
+</head>
+<body>
+<header class="intro">
+  <div><p class="eyebrow">Mood tracker · concept board</p><h1>Three ways to check in.</h1><p>Choose a direction for the main screen. Everything below is sample content.</p></div>
+  <div class="legend">Visual mockups only · controls are not functional</div>
+</header>
+<main class="boards">
+  <section class="concept" aria-labelledby="concept1">
+    <div class="concept-head"><h2 id="concept1">01 · The quiet journal</h2><span>Warm · reflective</span></div>
+    <div class="screen journal">
+      <div class="topline"><span>Daybook</span><span>Monday, Nov 16</span></div>
+      <h3>How are you feeling?</h3><p class="sub">A small pause for yourself.</p>
+      <div class="moods"><button class="mood">Bad</button><button class="mood">Bored</button><button class="mood">So-so</button><button class="mood selected">Happy</button><button class="mood">Very happy</button></div>
+      <textarea readonly placeholder="Add a note (optional)">Had a nice lunch and got outside for a bit.</textarea><br><button class="save">Save check-in&nbsp; →</button>
+      <div class="rule"></div><div class="history-title"><span>Recent entries</span><b>All entries ↗</b></div>
+      <div class="journal-entry"><time>Today<br>12:42</time><div><strong>Happy</strong><p>Had a nice lunch and got outside for a bit.</p></div></div>
+      <div class="journal-entry"><time>Today<br>08:10</time><div><strong>So-so</strong><p>Slow start, but getting there.</p></div></div>
+      <div class="journal-entry"><time>Yesterday<br>21:16</time><div><strong>Very happy</strong><p>Movie night with Sam.</p></div></div>
+      <div class="journal-entry"><time>Yesterday<br>14:03</time><div><strong>Bored</strong><p>Rainy afternoon, nothing planned.</p></div></div>
+    </div>
+  </section>
+  <section class="concept" aria-labelledby="concept2">
+    <div class="concept-head"><h2 id="concept2">02 · The quick log</h2><span>Compact · practical</span></div>
+    <div class="screen utility">
+      <div class="nav"><span class="brand">MOOD / LOG</span><span>My entries</span><span class="avatar">M</span></div>
+      <h3>New check-in</h3><div class="date">Monday, November 16 · 12:45 PM</div>
+      <div class="picker"><div class="pick"><i>☹</i>Bad</div><div class="pick"><i>◔</i>Bored</div><div class="pick"><i>😐</i>So-so</div><div class="pick selected"><i>☻</i>Happy</div><div class="pick"><i>✦</i>Very happy</div></div>
+      <div class="note-label"><span>Note</span><span>Optional</span></div><textarea readonly>Had a nice lunch and got outside for a bit.</textarea><button class="save">Save check-in</button>
+      <div class="section-head">Recent check-ins <span>See all →</span></div>
+      <div class="util-entry"><div class="util-icon mint">☻</div><div><strong>Happy</strong><p>Had a nice lunch and got outside for a bit.</p></div><time>12:42</time></div>
+      <div class="util-entry"><div class="util-icon">😐</div><div><strong>So-so</strong><p>Slow start, but getting there.</p></div><time>08:10</time></div>
+      <div class="util-entry"><div class="util-icon blue">✦</div><div><strong>Very happy</strong><p>Movie night with Sam.</p></div><time>Yesterday</time></div>
+      <div class="util-entry"><div class="util-icon">◔</div><div><strong>Bored</strong><p>Rainy afternoon, nothing planned.</p></div><time>Yesterday</time></div>
+      <div class="section-head" style="font-size:10px;color:#9299a3;font-weight:500">Entries stay in this browser</div>
+    </div>
+  </section>
+  <section class="concept" aria-labelledby="concept3">
+    <div class="concept-head"><h2 id="concept3">03 · The mood garden</h2><span>Playful · expressive</span></div>
+    <div class="screen playful">
+      <div class="hello"><span class="logo"><span class="spark">✳</span> little by little</span><span>Mon, Nov 16&nbsp; ☼</span></div>
+      <h3>Check in with<br>yourself.</h3><p class="prompt">What’s your mood right now?</p>
+      <div class="mood-grid">
+        <div class="tile"><i>🌧️</i>Bad</div><div class="tile"><i>☁️</i>Bored</div><div class="tile"><i>🌤️</i>So-so</div><div class="tile active"><i>🌱</i>Happy</div><div class="tile"><i>🌞</i>Very happy</div>
+      </div>
+      <div class="note-card"><label>A little note <span style="font-weight:400">· optional</span></label><textarea readonly>Had a nice lunch and got outside for a bit.</textarea></div>
+      <button class="save">Save this moment&nbsp; ✨</button>
+      <div class="history"><div class="history-head">Your recent moments <span>View all ↗</span></div>
+        <div class="play-entry"><div class="bubble green">🌱</div><div><strong>Happy</strong><p>Nice lunch, fresh air.</p></div><time>12:42</time></div>
+        <div class="play-entry"><div class="bubble">🌤️</div><div><strong>So-so</strong><p>Slow start, but getting there.</p></div><time>08:10</time></div>
+        <div class="play-entry"><div class="bubble pink">🌞</div><div><strong>Very happy</strong><p>Movie night with Sam.</p></div><time>Yesterday</time></div>
+        <div class="play-entry"><div class="bubble">☁️</div><div><strong>Bored</strong><p>Rainy afternoon.</p></div><time>Yesterday</time></div>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

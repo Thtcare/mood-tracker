@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f4eaff">
+<title>Little by little — Mood tracker</title>
+<style>
+  :root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#392b4f; background:#f5effa; font-synthesis:none; }
+  * { box-sizing:border-box; }
+  body { min-height:100vh; margin:0; padding:28px 18px 46px; background:radial-gradient(ellipse at 10% 0%,#fff7db 0,transparent 36%),radial-gradient(ellipse at 100% 35%,#e8ddff 0,transparent 42%),#f5effa; }
+  button, textarea { font:inherit; }
+  .app { width:min(100%,620px); margin:0 auto; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; color:#76658b; font-size:12px; }
+  .brand { display:flex; align-items:center; gap:9px; color:#392b4f; font-size:14px; font-weight:800; letter-spacing:-.02em; }
+  .spark { width:31px; height:31px; display:grid; place-items:center; border-radius:11px; color:#543a55; background:#ffc76e; font-size:16px; }
+  .today { text-align:right; }
+  main { margin-top:33px; }
+  h1 { margin:0; color:#352747; font-size:clamp(29px,7vw,40px); line-height:1.08; letter-spacing:-.055em; }
+  .prompt { margin:9px 0 20px; color:#806b95; font-size:14px; }
+  .mood-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+  .mood { min-height:91px; padding:12px 7px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; border:1px solid #ffffffd9; border-radius:16px; color:#58466c; background:#ffffffa8; box-shadow:0 4px 13px #53336d0a; font-size:12px; transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+  .mood:hover { transform:translateY(-2px); }
+  .mood[aria-pressed="true"] { border:2px solid #9a6ddb; background:#fff; color:#613c93; box-shadow:0 5px 16px #69439e24; }
+  .mood-emoji { font-size:25px; line-height:1; }
+  .note-card { margin-top:14px; padding:14px 15px 10px; border:1px solid #fff; border-radius:15px; background:#fffdf9d9; box-shadow:0 4px 13px #53336d09; }
+  .note-label { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:7px; color:#775f8f; font-size:12px; font-weight:750; }
+  .optional { font-size:11px; font-weight:450; }
+  textarea { display:block; width:100%; min-height:48px; max-height:150px; padding:4px 0; resize:vertical; border:0; outline:0; color:#594b65; background:transparent; font-size:13px; line-height:1.5; }
+  textarea::placeholder { color:#a698b2; }
+  .save { width:100%; min-height:47px; margin-top:11px; border:0; border-radius:12px; color:white; background:#6945a4; box-shadow:0 5px 12px #6945a433; font-weight:750; font-size:13px; transition:opacity .15s ease,transform .15s ease; }
+  .save:not(:disabled):hover { transform:translateY(-1px); }
+  .save:disabled { cursor:not-allowed; opacity:.48; box-shadow:none; }
+  .history { margin-top:29px; }
+  .calendar-card { padding:15px; border:1px solid #fff; border-radius:16px; background:#ffffffa6; box-shadow:0 4px 13px #53336d09; }
+  .calendar-nav { display:grid; grid-template-columns:38px 1fr 38px; align-items:center; margin-bottom:13px; }
+  .calendar-nav h2 { margin:0; color:#49385e; text-align:center; font-size:14px; }
+  .month-button { width:34px; height:34px; border:0; border-radius:10px; color:#765b91; background:#f3eafa; font-size:20px; }
+  .month-button:hover { background:#eadcf6; }
+  .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }
+  .weekday { padding:4px 0; color:#9a8ba7; text-align:center; font-size:9px; font-weight:700; }
+  .calendar-day, .calendar-blank { min-width:0; min-height:64px; border-radius:10px; }
+  .calendar-day { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:3px; padding:6px 2px 4px; border:1px solid transparent; color:#665276; background:#ffffffa0; }
+  .calendar-day:hover { border-color:#d8c5eb; }
+  .calendar-day[aria-pressed="true"] { border:1.5px solid #9a6ddb; color:#57377b; background:#f7efff; }
+  .calendar-day.today .day-number { color:#7046a1; font-weight:850; }
+  .day-number { font-size:11px; }
+  .day-average { color:#81649d; font-size:9px; line-height:1; font-weight:700; white-space:nowrap; }
+  .day-average .day-emoji { font-size:12px; vertical-align:-1px; }
+  .calendar-legend { margin:11px 2px 0; color:#9586a2; font-size:10px; text-align:center; }
+  .selected-day-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:19px 1px 10px; color:#47355e; font-size:13px; font-weight:800; }
+  .selected-average { color:#80649a; font-size:10px; font-weight:650; }
+  .history-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; color:#47355e; font-size:15px; font-weight:800; }
+  .count { color:#886ca5; font-size:11px; font-weight:600; }
+  .entry-list { display:grid; gap:9px; }
+  .entry { display:grid; grid-template-columns:42px minmax(0,1fr) auto; gap:11px; align-items:start; padding:13px; border:1px solid #ffffff; border-radius:14px; background:#ffffffb5; box-shadow:0 3px 11px #53336d08; }
+  .entry-icon { width:40px; height:40px; display:grid; place-items:center; border-radius:13px; background:#fff0cd; font-size:20px; }
+  .entry-icon.bad { background:#ffe3ea; }.entry-icon.bored { background:#e8e1f1; }.entry-icon.soso { background:#fff0cd; }.entry-icon.happy { background:#ddf4e8; }.entry-icon.veryhappy { background:#ffedc4; }
+  .entry-content { min-width:0; }
+  .entry-title { display:flex; flex-wrap:wrap; align-items:baseline; gap:5px 8px; }
+  .entry-title strong { color:#49385e; font-size:13px; }
+  .entry time { color:#9b8eaa; font-size:10px; }
+  .entry-note { margin:5px 0 0; color:#786b83; font-size:12px; line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .entry-actions { display:flex; gap:3px; }
+  .text-button { padding:5px 6px; border:0; border-radius:7px; color:#806b95; background:transparent; font-size:10px; }
+  .text-button:hover { background:#f1e9f8; color:#543777; }
+  .text-button.delete:hover { color:#a43d5c; background:#fff0f2; }
+  .empty { padding:22px 16px; border:1px dashed #cbb9dd; border-radius:14px; color:#806b95; background:#ffffff5c; text-align:center; font-size:12px; line-height:1.5; }
+  .empty strong { display:block; margin-bottom:4px; color:#604777; font-size:13px; }
+  .privacy { margin:20px 0 0; color:#9a8ba7; text-align:center; font-size:10px; }
+  .toast { position:fixed; left:50%; bottom:20px; transform:translate(-50%,12px); opacity:0; pointer-events:none; padding:10px 15px; border-radius:999px; color:white; background:#47355e; box-shadow:0 6px 20px #30203c33; font-size:12px; transition:opacity .2s, transform .2s; }
+  .toast.show { transform:translate(-50%,0); opacity:1; }
+  button:focus-visible, textarea:focus-visible { outline:3px solid #b99add; outline-offset:2px; }
+  @media(max-width:480px) {
+    body { padding:20px 14px 36px; }
+    main { margin-top:27px; }
+    .mood-grid { gap:6px; }
+    .mood { min-height:79px; border-radius:13px; padding:9px 3px; font-size:10px; }
+    .mood-emoji { font-size:22px; }
+    .entry { grid-template-columns:36px minmax(0,1fr); gap:9px; padding:11px; }
+    .entry-icon { width:36px;height:36px;border-radius:11px;font-size:18px; }
+    .entry-actions { grid-column:2; margin-top:-3px; }
+    .text-button { padding-left:0; padding-right:12px; }
+  }
+  @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><span class="spark" aria-hidden="true">✳</span><span>little by little</span></div>
+    <div class="today" id="today"></div>
+  </header>
+  <main>
+    <section aria-labelledby="main-title">
+      <h1 id="main-title">Check in with<br>yourself.</h1>
+      <p class="prompt">What’s your mood right now?</p>
+      <div class="mood-grid" role="group" aria-label="Choose a mood" id="mood-grid"></div>
+      <label class="note-card" for="note">
+        <span class="note-label">A little note <span class="optional">· optional</span></span>
+        <textarea id="note" maxlength="1000" placeholder="Anything on your mind?" rows="2"></textarea>
+      </label>
+      <button class="save" id="save" type="button" disabled>Save this moment&nbsp; ✨</button>
+    </section>
+    <section class="history" aria-labelledby="history-heading">
+      <div class="history-head"><span id="history-heading">Your mood calendar</span><span class="count" id="count"></span></div>
+      <div class="calendar-card">
+        <div class="calendar-nav">
+          <button class="month-button" id="previous-month" type="button" aria-label="Previous month">‹</button>
+          <h2 id="month-title"></h2>
+          <button class="month-button" id="next-month" type="button" aria-label="Next month">›</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid" role="grid" aria-label="Mood history calendar"></div>
+        <p class="calendar-legend">Each day shows its average mood (1 = Bad, 5 = Very happy).</p>
+      </div>
+      <div class="selected-day-head"><span id="selected-day-title"></span><span id="selected-average" class="selected-average"></span></div>
+      <div class="entry-list" id="entry-list" aria-live="polite"></div>
+    </section>
+    <p class="privacy">Your check-ins are saved only in this browser.</p>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="mood-average.js"></script>
+<script>
+(() => {
+  const STORAGE_KEY = 'little-by-little.mood-checkins.v1';
+  const MOODS = [
+    { id:'bad', label:'Bad', emoji:'🌧️' },
+    { id:'bored', label:'Bored', emoji:'☁️' },
+    { id:'soso', label:'So-so', emoji:'🌤️' },
+    { id:'happy', label:'Happy', emoji:'🌱' },
+    { id:'veryhappy', label:'Very happy', emoji:'🌞' }
+  ];
+  const moodGrid = document.getElementById('mood-grid');
+  const note = document.getElementById('note');
+  const saveButton = document.getElementById('save');
+  const entryList = document.getElementById('entry-list');
+  const count = document.getElementById('count');
+  const calendarGrid = document.getElementById('calendar-grid');
+  const monthTitle = document.getElementById('month-title');
+  const selectedDayTitle = document.getElementById('selected-day-title');
+  const selectedAverage = document.getElementById('selected-average');
+  const today = new Date();
+  let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  let selectedDay = toDayKey(today);
+  const toast = document.getElementById('toast');
+  let selectedMood = null;
+  let editingId = null;
+  let entries = loadEntries();
+  let toastTimer;
+
+  function loadEntries() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(entry => entry && typeof entry.id === 'string' && MOODS.some(m => m.id === entry.mood) && typeof entry.createdAt === 'string' && !Number.isNaN(Date.parse(entry.createdAt)))
+        .map(entry => ({ id:entry.id, mood:entry.mood, note:typeof entry.note === 'string' ? entry.note : '', createdAt:entry.createdAt }));
+    } catch { return []; }
+  }
+  function persist() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      return true;
+    } catch {
+      showToast('Could not save. Browser storage may be full or unavailable.');
+      return false;
+    }
+  }
+  function make(tag, className, text) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+  }
+  function renderMoods() {
+    moodGrid.replaceChildren();
+    for (const mood of MOODS) {
+      const button = make('button', 'mood');
+      button.type = 'button';
+      button.setAttribute('aria-pressed', String(selectedMood === mood.id));
+      const emoji = make('span', 'mood-emoji', mood.emoji);
+      emoji.setAttribute('aria-hidden','true');
+      button.append(emoji, make('span','',mood.label));
+      button.addEventListener('click', () => { selectedMood = mood.id; renderMoods(); updateSaveButton(); });
+      moodGrid.append(button);
+    }
+  }
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const sameDay = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const wasYesterday = date.getFullYear() === yesterday.getFullYear() && date.getMonth() === yesterday.getMonth() && date.getDate() === yesterday.getDate();
+    const day = sameDay ? 'Today' : wasYesterday ? 'Yesterday' : new Intl.DateTimeFormat(undefined, { month:'short', day:'numeric', year:date.getFullYear() === now.getFullYear() ? undefined : 'numeric' }).format(date);
+    const time = new Intl.DateTimeFormat(undefined, { hour:'numeric', minute:'2-digit' }).format(date);
+    return { day, time };
+  }
+  function toDayKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  }
+  function dayKeyForEntry(entry) { return toDayKey(new Date(entry.createdAt)); }
+  function daySummary(dayEntries) {
+    const result = MoodAverage.calculate(dayEntries.map(entry => entry.mood), MOODS.map(mood => mood.id));
+    return { average:result.average, mood:MOODS.find(mood => mood.id === result.moodId) };
+  }
+  function renderCalendar() {
+    calendarGrid.replaceChildren();
+    monthTitle.textContent = new Intl.DateTimeFormat(undefined, { month:'long', year:'numeric' }).format(visibleMonth);
+    for (const label of ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']) {
+      const weekday = make('div','weekday',label);
+      weekday.setAttribute('role','columnheader');
+      calendarGrid.append(weekday);
+    }
+    const year = visibleMonth.getFullYear(), month = visibleMonth.getMonth();
+    const offset = (new Date(year,month,1).getDay()+6)%7;
+    const days = new Date(year,month+1,0).getDate();
+    for (let i=0;i<offset;i++) {
+      const blank = make('div','calendar-blank'); blank.setAttribute('role','gridcell'); calendarGrid.append(blank);
+    }
+    for (let day=1;day<=days;day++) {
+      const date = new Date(year,month,day), key = toDayKey(date);
+      const dayEntries = entries.filter(entry => dayKeyForEntry(entry) === key);
+      const isToday = key === toDayKey(new Date());
+      const button = make('button',`calendar-day${isToday ? ' today' : ''}`);
+      button.type = 'button'; button.setAttribute('role','gridcell'); button.setAttribute('aria-pressed',String(selectedDay === key));
+      button.setAttribute('aria-label', new Intl.DateTimeFormat(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(date) + (dayEntries.length ? `, average mood ${daySummary(dayEntries).average.toFixed(1)} out of 5` : ', no check-ins'));
+      button.append(make('span','day-number',String(day)));
+      if (dayEntries.length) {
+        const summary = daySummary(dayEntries), avg = make('span','day-average');
+        const emoji = make('span','day-emoji',summary.mood.emoji);
+        emoji.setAttribute('aria-hidden','true');
+        avg.append(emoji, document.createTextNode(` ${summary.average.toFixed(1)}`));
+        button.append(avg);
+      }
+      button.addEventListener('click',() => { selectedDay = key; renderCalendar(); renderEntries(); });
+      calendarGrid.append(button);
+    }
+    const trailing = (7-calendarGrid.children.length%7)%7;
+    for (let i=0;i<trailing;i++) { const blank=make('div','calendar-blank'); blank.setAttribute('role','gridcell'); calendarGrid.append(blank); }
+  }
+  function renderEntries() {
+    entryList.replaceChildren();
+    const selectedDate = new Date(`${selectedDay}T12:00:00`);
+    selectedDayTitle.textContent = new Intl.DateTimeFormat(undefined,{weekday:'long',month:'long',day:'numeric'}).format(selectedDate);
+    const dayEntries = entries.filter(entry => dayKeyForEntry(entry) === selectedDay);
+    count.textContent = dayEntries.length ? `${dayEntries.length} ${dayEntries.length === 1 ? 'check-in' : 'check-ins'}` : '';
+    selectedAverage.textContent = dayEntries.length ? `Average: ${daySummary(dayEntries).average.toFixed(1)} / 5` : '';
+    const sorted = dayEntries.sort((a,b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    if (!sorted.length) {
+      const empty = make('div','empty');
+      empty.append(make('strong','', 'No check-ins for this day.'), document.createTextNode('Choose another date or add a mood above.'));
+      entryList.append(empty);
+      return;
+    }
+    for (const entry of sorted) {
+      const mood = MOODS.find(item => item.id === entry.mood);
+      const row = make('article','entry');
+      const icon = make('div',`entry-icon ${mood.id}`,mood.emoji);
+      icon.setAttribute('aria-hidden','true');
+      const content = make('div','entry-content');
+      const title = make('div','entry-title');
+      const time = formatDate(entry.createdAt);
+      title.append(make('strong','',mood.label));
+      const timeElement = make('time','',time.time);
+      timeElement.dateTime = entry.createdAt;
+      title.append(timeElement);
+      content.append(title);
+      if (entry.note) content.append(make('p','entry-note',entry.note));
+      const actions = make('div','entry-actions');
+      const edit = make('button','text-button','Edit');
+      edit.type = 'button'; edit.setAttribute('aria-label',`Edit ${mood.label} entry at ${time.time}`);
+      edit.addEventListener('click',() => beginEdit(entry));
+      const remove = make('button','text-button delete','Delete');
+      remove.type = 'button'; remove.setAttribute('aria-label',`Delete ${mood.label} entry at ${time.time}`);
+      remove.addEventListener('click',() => deleteEntry(entry));
+      actions.append(edit,remove);
+      row.append(icon,content,actions);
+      entryList.append(row);
+    }
+  }
+  function updateSaveButton() {
+    saveButton.disabled = !selectedMood;
+    saveButton.textContent = editingId ? 'Save changes' : 'Save this moment  ✨';
+  }
+  function clearForm() {
+    selectedMood = null; editingId = null; note.value = '';
+    renderMoods(); updateSaveButton();
+  }
+  function saveEntry() {
+    if (!selectedMood) return;
+    const cleanNote = note.value.trim();
+    if (editingId) {
+      const target = entries.find(entry => entry.id === editingId);
+      if (!target) { clearForm(); return; }
+      const previous = { ...target };
+      target.mood = selectedMood; target.note = cleanNote;
+      if (!persist()) { entries = entries.map(entry => entry.id === previous.id ? previous : entry); return; }
+      clearForm(); renderCalendar(); renderEntries(); showToast('Check-in updated.');
+      return;
+    }
+    const entry = { id:globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`, mood:selectedMood, note:cleanNote, createdAt:new Date().toISOString() };
+    entries.push(entry);
+    if (!persist()) { entries = entries.filter(item => item.id !== entry.id); return; }
+    clearForm(); visibleMonth = new Date(); selectedDay = toDayKey(new Date()); renderCalendar(); renderEntries(); showToast('Check-in saved.');
+  }
+  function beginEdit(entry) {
+    editingId = entry.id; selectedMood = entry.mood; note.value = entry.note;
+    renderMoods(); updateSaveButton();
+    document.getElementById('main-title').scrollIntoView({ behavior:'smooth', block:'start' });
+    note.focus({ preventScroll:true });
+  }
+  function deleteEntry(entry) {
+    const mood = MOODS.find(item => item.id === entry.mood);
+    if (!window.confirm(`Delete this ${mood.label} check-in? This can’t be undone.`)) return;
+    const previous = entries;
+    entries = entries.filter(item => item.id !== entry.id);
+    if (!persist()) { entries = previous; return; }
+    if (editingId === entry.id) clearForm();
+    renderCalendar(); renderEntries(); showToast('Check-in deleted.');
+  }
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'),2400);
+  }
+  document.getElementById('today').textContent = new Intl.DateTimeFormat(undefined, { weekday:'short', month:'short', day:'numeric' }).format(today);
+  document.getElementById('previous-month').addEventListener('click',() => { visibleMonth = new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()-1,1); selectedDay = toDayKey(new Date(visibleMonth.getFullYear(),visibleMonth.getMonth(),1)); renderCalendar(); renderEntries(); });
+  document.getElementById('next-month').addEventListener('click',() => { visibleMonth = new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()+1,1); selectedDay = toDayKey(new Date(visibleMonth.getFullYear(),visibleMonth.getMonth(),1)); renderCalendar(); renderEntries(); });
+  saveButton.addEventListener('click',saveEntry);
+  renderMoods(); renderCalendar(); renderEntries(); updateSaveButton();
+})();
+</script>
+</body>
+</html>
